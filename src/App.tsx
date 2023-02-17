@@ -4,15 +4,40 @@ import { Search } from "components/Search";
 import { UserCard } from "components/UserCard";
 
 import {defaultUser} from "mock"
+import { useState } from "react";
+import { GitHubError, GithubUser, LocalGitHubUser } from "types";
+import { extractLocalUser } from "utils/extract-local-user";
+import { isGitHubUser } from "utils/typeguards";
+
+const BASE_URL = 'https://api.github.com/users/'
 
 function App() {
+
+  const [user, setUser] = useState<LocalGitHubUser | null>(defaultUser)
+
+  const fetchUser = async (username:string) => {
+    const url = BASE_URL + username;
+    
+    const res = await fetch(url);
+    const user = await res.json() as GithubUser | GitHubError;
+
+    if (isGitHubUser(user)) {
+      setUser(extractLocalUser(user))
+    } else {
+      setUser(null)
+    }
+  }
+
   return (
     <Container>
       <Header/>
-      <Search hasError onSubmit={() => {}}/>
-      <UserCard 
-        {...defaultUser}
+      <Search hasError={!user} onSubmit={fetchUser}/>
+      {user && (
+        <UserCard 
+        {...user}
       />
+      )}
+      
     </Container>
   );
 }
